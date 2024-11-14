@@ -1,0 +1,21 @@
+# Core deep learning frameworks
+torch
+torchvision
+
+# Image processing and dataset utilities
+Pillow
+numpy
+scikit-learn
+
+# Statistical and IRT modeling libraries
+scipy
+pandas
+statsmodels  # For some statistical tests and regressions
+factor_analyzer  # For confirmatory factor analysis (optional, if using)
+
+# Plotting and visualization
+matplotlib
+seaborn
+
+# Additional dependencies for model downloads and setup
+tqdm  # For progress bars when downloading datasets
