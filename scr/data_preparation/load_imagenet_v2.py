@@ -3,7 +3,7 @@ from PIL import Image
 import torch
 from torchvision import transforms
 
-def load_imagenet_data(path):
+def load_imagenet_v2_data(path):
     images, labels = [], []
     for class_name in os.listdir(path):
         class_path = os.path.join(path, class_name)
@@ -15,7 +15,7 @@ def load_imagenet_data(path):
                 labels.append(class_name)
     return images, labels
 
-def preprocess_imagenet(image):
+def preprocess_imagenet_v2(image):
     preprocess = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
