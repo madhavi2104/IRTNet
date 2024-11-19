@@ -1,1 +1,46 @@
-data/config/kaggle.json
+# Ignore dataset directories
+data/ImageNet/
+data/ImageNetR/
+data/ImageNot/
+data/ImageNet_V2/
+data/ImageNet_Sketch/
+
+# Ignore Kaggle configuration
+data/config/
+
+# Ignore temporary or intermediate files
+*.tmp
+*.log
+*.csv
+*.zip
+
+# Ignore Python cache and virtual environment files
+__pycache__/
+*.py[cod]
+*.pyo
+env/
+venv/
+*.egg-info/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore editor and IDE-specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore model files if they are large
+models/
+*.h5
+*.ckpt
+*.onnx
+*.pt
+
+# Ignore any backup or temporary files
+*.bak
+*.swp
+*.~*
+
