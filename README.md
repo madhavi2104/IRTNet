@@ -1,18 +1,39 @@
-# Resources
+# IRTNet: Applying Item Response Theory to ImageNet Data Models
 
-## Datasets
-1. **[ImageNet](https://www.kaggle.com/c/imagenet-object-localization-challenge/overview/description)**: Standard dataset for object localization.
-2. **[ImageNot](https://github.com/olawalesalaudeen/imagenot)**: A challenging dataset that provides out-of-distribution variations.
-3. **[ImageNet V2](https://github.com/modestyachts/ImageNetV2)**: New test set designed to evaluate model robustness.
-4. **[ImageNet R](https://github.com/hendrycks/imagenet-r)**: Dataset focused on robustness against distribution shifts.
-5. **[ImageNet Sketch](https://github.com/HaohanWang/ImageNet-Sketch)**: Sketch versions of ImageNet for evaluating model generalization.
+This repository is part of my master's thesis, focusing on using Item Response Theory (IRT) to analyze the robustness of machine learning models across various datasets derived from ImageNet. Due to dataset size constraints, this repository does not include the datasets directly but provides instructions on downloading and preparing them for use.
 
-## Pre-trained Models
-- **[AlexNet_cvgj](https://github.com/cvjena/cnn-models/tree/master/AlexNet_cvgj)**,
-- **[ResNet_preact](https://github.com/cvjena/cnn-models/tree/master/ResNet_preact)**
-- **[EfficientNet-V2-L](https://keras.io/api/applications/efficientnet_v2/)**,
-- **[ConvNeXt-L](https://github.com/facebookresearch/ConvNeXt-V2)**
-- **[DenseNet](https://github.com/pytorch/vision/tree/6db1569c89094cf23f3bc41f79275c45e9fcb3f3/torchvision/models)**
+## **Repository Structure**
 
+```
+IRTNet/
+├── README.md                        # Repository guide and instructions
+├── requirements.txt                 # Python dependencies
+│
+├── data/                            # Dataset-related files
+│   ├── ImageNet/                    # ImageNet validation dataset
+│   ├── ImageNet_Sketch/             # ImageNet Sketch dataset
+│   ├── ImageNet_V2/                 # ImageNet V2 dataset
+│   ├── ImageNet_R/                  # ImageNet R dataset
+│   ├── ImageNot/                    # ImageNot dataset
+│   ├── Synsets/                     # Generated synset files for all datasets
+│   │   ├── ImageNet_synsets.txt
+│   │   ├── Sketch_synsets.txt
+│   │   ├── ImageNet_V2_synsets.txt
+│   │   ├── ImageNet_R_synsets.txt
+│   │   ├── ImageNot_synsets.txt
+│
+├── src/                             # Source code for data processing and analysis
+│   ├── synset_generator.py          # Synset extraction and generation scripts
+│   ├── data_preparation/            # Scripts for dataset preprocessing
+│   ├── model_analysis.py            # IRT and model evaluation scripts
+│   ├── visualization.py             # Visualization utilities
+│
+├── notebooks/                       # Jupyter notebooks for experiments and demos
+│
+├── results/                         # Outputs such as plots and tables
+│
+└── logs/                            # Logs for debugging and monitoring
+
+```
 
 
