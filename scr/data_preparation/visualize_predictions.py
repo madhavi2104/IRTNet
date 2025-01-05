@@ -25,7 +25,6 @@ def get_class_name(class_id):
 get_class_name('1')
 
 
-
 def visualize_predictions_with_top5(csv_file, dataset_dir):
     df = pd.read_csv(csv_file)
 
@@ -65,6 +64,6 @@ def visualize_predictions_with_top5(csv_file, dataset_dir):
 
 # Example usage
 if __name__ == "__main__":
-    csv_file = "data/Processed/ImageNet-V2_subset_results.csv"  # Update with your CSV file path
-    dataset_dir = "data/ImageNet_V2/imagenetv2-matched-frequency-format-val"  # Update with your dataset path
+    csv_file = "data/Processed/ImageNet_subset_results.csv"  # Update with your CSV file path
+    dataset_dir = "data/ImageNet/ILSVRC/Images"  # Update with your dataset path
     visualize_predictions_with_top5(csv_file, dataset_dir)

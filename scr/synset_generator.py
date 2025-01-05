@@ -1,39 +1,70 @@
 import scipy.io
 import os
 
-def extract_imagenet_synsets(meta_file, ground_truth_file, output_txt):
-    """
-    Extracts synsets for the ImageNet validation dataset.
+import scipy.io
 
-    Parameters:
-    - meta_file: Path to meta.mat containing synset-class index mapping.
-    - ground_truth_file: Path to ILSVRC2012_validation_ground_truth.txt.
-    - output_txt: Path to save the extracted synsets list.
-    """
-    # Load meta.mat to get the mapping of synsets to class indices
-    meta = scipy.io.loadmat(meta_file)
-    synsets = [item[0][0] for item in meta['synsets']['WNID']]
+# def extract_imagenet_synsets_flat(meta_file, ground_truth_file, output_txt):
+#     """
+#     Extracts synsets for the ImageNet validation dataset with flat image structure.
 
-    # Load ground truth file
-    with open(ground_truth_file, 'r') as f:
-        ground_truth_indices = [int(line.strip()) for line in f]
+#     Parameters:
+#     - meta_file: Path to meta.mat containing synset-class index mapping.
+#     - ground_truth_file: Path to ILSVRC2012_validation_ground_truth.txt.
+#     - output_txt: Path to save the extracted synsets list.
+#     """
+#     # Load meta.mat to get the mapping of synsets to class indices
+#     meta = scipy.io.loadmat(meta_file)
+#     synsets = [item[0][0] for item in meta['synsets']['WNID']]
 
-    # Map ground truth indices to synsets
-    ground_truth_synsets = [synsets[index - 1] for index in ground_truth_indices]
+#     # Load ground truth file
+#     with open(ground_truth_file, 'r') as f:
+#         ground_truth_indices = [int(line.strip()) for line in f]
 
-    # Save the unique synsets to a text file
-    with open(output_txt, 'w') as f:
-        for synset in sorted(set(ground_truth_synsets)):
-            f.write(synset + '\n')
+#     # Map ground truth indices to synsets
+#     ground_truth_synsets = [synsets[index - 1] for index in ground_truth_indices]
 
-    print(f"Synsets saved to {output_txt}")
+#     # Save the unique synsets to a text file
+#     with open(output_txt, 'w') as f:
+#         f.write("Synset\n")  # Add a header row for clarity
+#         for synset in sorted(set(ground_truth_synsets)):
+#             f.write(synset + '\n')
 
-# Example usage:
-meta_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\meta.mat"
-ground_truth_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\ILSVRC2012_validation_ground_truth.txt"
-output_file_path = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets.txt"
+#     print(f"Synsets saved to {output_txt}")
 
-extract_imagenet_synsets(meta_file_path, ground_truth_file_path, output_file_path)
+# # Example usage:
+# meta_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\meta.mat"
+# ground_truth_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\ILSVRC2012_validation_ground_truth.txt"
+# output_file_path = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets.txt"
+
+# extract_imagenet_synsets_flat(meta_file_path, ground_truth_file_path, output_file_path)
+
+# synset_file = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets.txt"
+
+# with open(synset_file, "r") as f:
+#     synsets = [line.strip() for line in f][1:]  # Skip the first line
+
+# # Overwrite the file with the corrected list
+# with open(synset_file, "w") as f:
+#     f.write("\n".join(synsets))
+
+import scipy.io
+
+# Path to meta.mat
+meta_file = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\ILSVRC2012_devkit_t12\data\meta.mat"
+
+# Load meta.mat
+meta = scipy.io.loadmat(meta_file)
+
+# Extract synsets with ILSVRC2012_ID <= 1000
+synsets = [entry[0][0] for entry in meta['synsets']['WNID'][:1000]]
+
+# Save synsets to a text file
+synset_file = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets.txt"
+with open(synset_file, "w") as f:
+    f.writelines(f"{synset}\n" for synset in synsets)
+
+print(f"Synsets file created successfully with {len(synsets)} synsets!")
+
 
 
 import os
@@ -124,3 +155,52 @@ def convert_classes_to_synsets(classes_path, output_path):
 
 # Run the conversion
 convert_classes_to_synsets(classes_file, synsets_output)
+
+import scipy.io
+import json
+import os
+
+def extract_imagenet_synsets(meta_file, ground_truth_file, class_index_file, output_txt):
+    """
+    Extracts synsets and class names for the ImageNet validation dataset.
+
+    Parameters:
+    - meta_file: Path to meta.mat containing synset-class index mapping.
+    - ground_truth_file: Path to ILSVRC2012_validation_ground_truth.txt.
+    - class_index_file: Path to imagenet_class_index.json for synset-to-class-name mapping.
+    - output_txt: Path to save the extracted synsets and class names.
+    """
+    # Load meta.mat to get the mapping of synsets to class indices
+    meta = scipy.io.loadmat(meta_file)
+    synsets = [item[0][0] for item in meta['synsets']['WNID']]
+
+    # Load ground truth file
+    with open(ground_truth_file, 'r') as f:
+        ground_truth_indices = [int(line.strip()) for line in f]
+
+    # Map ground truth indices to synsets
+    ground_truth_synsets = [synsets[index - 1] for index in ground_truth_indices]
+
+    # Load class index file to map synsets to class names
+    with open(class_index_file, 'r') as f:
+        imagenet_labels = json.load(f)
+
+    # Create a mapping from synset to class name
+    synset_to_class_name = {v[0]: v[1] for v in imagenet_labels.values()}
+
+    # Save the unique synsets and their class names to a text file
+    with open(output_txt, 'w') as f:
+        f.write("Synset\tClass Name\n")  # Header row
+        for synset in sorted(set(ground_truth_synsets)):
+            class_name = synset_to_class_name.get(synset, "Unknown")
+            f.write(f"{synset}\t{class_name}\n")
+
+    print(f"Synsets and class names saved to {output_txt}")
+
+# Example usage:
+meta_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\meta.mat"
+ground_truth_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\ILSVRC2012_validation_ground_truth.txt"
+class_index_file_path = r"E:\Thesis\IRTNet\data\ImageNet\imagenet_class_index.json"
+output_file_path = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets_and_classes.txt"
+
+extract_imagenet_synsets(meta_file_path, ground_truth_file_path, class_index_file_path, output_file_path)
