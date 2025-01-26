@@ -2,31 +2,28 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
-import json
+from scipy.io import loadmat
 
-# Load ImageNet label mapping
-with open(r"E:/Thesis/IRTNet/data/ImageNet/imagenet_class_index.json", "r") as f:
-    imagenet_labels = json.load(f)
+# Load meta.mat
+meta_mat_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\ILSVRC2012_devkit_t12\data\meta.mat"  # Update with your meta.mat file path
+meta_mat = loadmat(meta_mat_path)
 
-# # Print the first few entries to verify the format
-# print(list(imagenet_labels.items())[:5])
-
-# [('0', ['n01440764', 'tench']), ('1', ['n01443537', 'goldfish']), ('2', ['n01484850', 'great_white_shark']), ('3', ['n01491361', 'tiger_shark']), ('4', ['n01494475', 'hammerhead'])]
+meta_synsets = meta_mat["synsets"]
+meta_synset_to_label = {
+    entry[1][0]: entry[2][0] for entry in meta_synsets
+}
 
 def get_class_name(class_id):
-    """Convert ImageNet class ID to a human-readable label."""
-    for key, value in imagenet_labels.items():
-        if value[0] == class_id:  # Compare the ImageNet ID (e.g., 'n01440764') to class_id
-            return value[1].replace("_", " ")
-    return class_id  # Return the class_id if not found
+    """Convert synset ID to human-readable label."""
+    return meta_synset_to_label.get(class_id, f"Unknown ({class_id})")
 
-# # Test the function
-
-get_class_name('1')
-
-
-def visualize_predictions_with_top5(csv_file, dataset_dir):
+def visualize_predictions_with_top5(csv_file, dataset_dir, synsets_file):
+    # Load predictions CSV
     df = pd.read_csv(csv_file)
+
+    # Load synsets file for validation
+    with open(synsets_file, "r") as f:
+        valid_synsets = {line.strip() for line in f}
 
     for idx, row in df.iterrows():
         image_path = os.path.join(dataset_dir, row["Item"])
@@ -42,10 +39,13 @@ def visualize_predictions_with_top5(csv_file, dataset_dir):
             key.replace("Answer ", ""): row[key]
             for key in row.index if key.startswith("Answer ")
         }
-        predictions_with_labels = {
-            model: f"{get_class_name(pred)} ({pred})"
-            for model, pred in predictions.items()
-        }
+
+        predictions_with_labels = {}
+        for model, pred in predictions.items():
+            label = get_class_name(pred)
+            if pred not in valid_synsets:
+                print(f"Warning: Prediction {pred} by {model} not in valid synsets.")
+            predictions_with_labels[model] = f"{label} ({pred})"
 
         true_label = f"{get_class_name(row['True Label'])} ({row['True Label']})"
 
@@ -66,4 +66,8 @@ def visualize_predictions_with_top5(csv_file, dataset_dir):
 if __name__ == "__main__":
     csv_file = "data/Processed/ImageNet_subset_results.csv"  # Update with your CSV file path
     dataset_dir = "data/ImageNet/ILSVRC/Images"  # Update with your dataset path
-    visualize_predictions_with_top5(csv_file, dataset_dir)
+    synsets_file = "data/Synsets/ImageNet_synsets.txt"  # Synsets file for validation
+    visualize_predictions_with_top5(csv_file, dataset_dir, synsets_file)
+
+
+
