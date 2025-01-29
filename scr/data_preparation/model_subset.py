@@ -7,7 +7,6 @@ from PIL import Image, UnidentifiedImageError
 from torchvision import models, transforms
 from torchvision.models import get_model_weights
 
-# Define models to evaluate
 model_names = [
     "resnet18", "resnet34", "resnet50", "resnet101", "resnet152",
     "densenet121", "densenet161", "densenet169", "densenet201",
@@ -17,20 +16,17 @@ model_names = [
     "alexnet", "shufflenet_v2_x0_5", "shufflenet_v2_x1_0",
     "squeezenet1_0", "squeezenet1_1", "inception_v3"
 ]
+# 27 models in total from torchvision.models
 
-# Load Torchvision model weights for correct class labels
 def load_torchvision_class_labels(model_name):
     try:
-        # Retrieve weights and their associated categories
         weights_enum = get_model_weights(model_name)
         weights = weights_enum.DEFAULT
         categories = weights.meta["categories"]
 
-        # Log success
         print(f"Loaded {len(categories)} categories for {model_name} from model metadata.")
         return categories
     except AttributeError:
-        # Log a warning if weights or metadata are unavailable
         print(f"Warning: {model_name} does not provide metadata. Predictions may be inaccurate.")
         return []
     except Exception as e:
