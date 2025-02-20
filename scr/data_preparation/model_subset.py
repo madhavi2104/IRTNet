@@ -33,29 +33,26 @@ def load_torchvision_class_labels(model_name):
         print(f"Error loading class labels for {model_name}: {e}")
         return []
 
-# Load Mapping File for Numeric Labels to Synsets: Handles imagenet_class_index.json
 def load_class_index_mapping(mapping_file):
     with open(mapping_file, "r") as f:
         mapping = json.load(f)
-
-    if not isinstance(mapping, dict):
-        raise ValueError("Expected a dictionary format for imagenet_class_index.json.")
-
-    # Reverse mapping: {wnid: synset}
     return {v[0]: v[1] for k, v in mapping.items()}
 
-# Load Mapping File for Numeric Labels to Synsets: Handles class_info.json
 def load_class_info_mapping(mapping_file):
     with open(mapping_file, "r") as f:
         mapping = json.load(f)
-
-    if not isinstance(mapping, list):
-        raise ValueError("Expected a list format for class_info.json.")
-    
-    # {cid: synset}
     return {entry["cid"]: entry["synset"][0] for entry in mapping}
 
-# Wrapper to Load the Appropriate Mapping
+def extract_truelabel_from_filename(filename):
+    """
+    Extracts the true label from an ImageNet-A file name.
+    Expected format: number_truelabel_description
+    """
+    parts = filename.split("_")
+    if len(parts) > 1:
+        return parts[1]  # The second part is the true label
+    return "UNKNOWN"
+
 def load_label_mapping(mapping_file, file_type):
     if file_type == "class_info":
         return load_class_info_mapping(mapping_file)
@@ -64,14 +61,10 @@ def load_label_mapping(mapping_file, file_type):
     else:
         raise ValueError(f"Unknown file type: {file_type}")
 
-# Initialize models and processors
 def load_model(name):
     try:
-        # Dynamically retrieve the correct weights enum for the model
         weights_enum = get_model_weights(name)
-        weights = weights_enum.DEFAULT  # Use the most up-to-date weights
-        
-        # Load the model with weights
+        weights = weights_enum.DEFAULT
         model = getattr(models, name)(weights=weights)
         model.eval()
         return model
@@ -91,7 +84,6 @@ for name in model_names:
         models_dict[name] = model
         torchvision_class_labels_dict[name] = load_torchvision_class_labels(name)
 
-# Define image transformations for Torchvision models
 torchvision_transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
@@ -99,7 +91,6 @@ torchvision_transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-# Predict the label for a single image
 def get_prediction(image_path, model, model_name):
     try:
         image = Image.open(image_path).convert("RGB")
@@ -118,73 +109,37 @@ def get_prediction(image_path, model, model_name):
         print(f"Error processing {image_path}: {e}")
         return None
 
-# Generalized dataset processing
 def process_dataset(dataset_dir, dataset_name, mapping_file=None, file_type=None, subset_size=None):
     print(f"Processing {dataset_name}...")
-
-    # Load mapping file for True Labels
-    label_mapping = load_label_mapping(mapping_file, file_type) if mapping_file else None
-
+    
     image_paths = []
     true_labels = []
-    missing_folders = set()  # Collect missing folders
-
-    # Iterate through dataset folders
-    for folder_name in os.listdir(dataset_dir):  # Folder name (e.g., "0", "1", ...)
+    
+    for folder_name in os.listdir(dataset_dir):
         folder_path = os.path.join(dataset_dir, folder_name)
         if not os.path.isdir(folder_path):
             continue
-
-        # Handle numeric folder names specifically for ImageNet-V2
-        if file_type == "class_info" and folder_name.isdigit():
-            key = int(folder_name)  # Convert folder name to numeric ID
-        else:
-            key = folder_name  # Use folder name as-is for other datasets
-
-        true_label = label_mapping.get(key, "UNKNOWN")
-        if true_label == "UNKNOWN":
-            missing_folders.add(folder_name)
-
-        # Append true_label for each image in the folder
+        
         for img_name in os.listdir(folder_path):
             img_path = os.path.join(folder_path, img_name)
+            true_label = extract_truelabel_from_filename(img_name) if dataset_name == "ImageNet-A" else folder_name
             image_paths.append(img_path)
             true_labels.append(true_label)
-
-    # Log missing folders
-    if missing_folders:
-        print("\nWarning: The following folders were not found in the mapping file:")
-        print(", ".join(sorted(missing_folders)))
-
-    # Subset sampling
+    
     if subset_size and subset_size < len(image_paths):
-        if len(image_paths) != len(true_labels):
-            raise ValueError(
-                f"Mismatch in lengths: image_paths ({len(image_paths)}) vs true_labels ({len(true_labels)})."
-            )
         sampled_indices = random.sample(range(len(image_paths)), subset_size)
         image_paths = [image_paths[i] for i in sampled_indices]
         true_labels = [true_labels[i] for i in sampled_indices]
-
+    
     rows = []
     for img_path, true_label in zip(image_paths, true_labels):
-        predictions = {}
-        for model_name, model in models_dict.items():
-            pred = get_prediction(img_path, model, model_name)
-            predictions[model_name] = pred
-
+        predictions = {model_name: get_prediction(img_path, model, model_name) for model_name, model in models_dict.items()}
         if all(pred is None for pred in predictions.values()):
             print(f"Warning: No valid predictions for {img_path}. Skipping...")
             continue
-
-        rows.append({
-            "Item": os.path.relpath(img_path, dataset_dir),
-            **{f"Answer_{model_name}": predictions[model_name] for model_name in models_dict},
-            "True Label": true_label
-        })
-
+        rows.append({"Item": os.path.relpath(img_path, dataset_dir), **{f"Answer_{model_name}": pred for model_name, pred in predictions.items()}, "True Label": true_label})
+    
     return pd.DataFrame(rows)
-
 def normalize_labels(csv_path):
     """
     Normalizes labels in the CSV for consistent matching.
@@ -216,40 +171,14 @@ def normalize_labels(csv_path):
     df.to_csv(normalized_csv_path, index=False)
     print(f"Normalized CSV saved to: {normalized_csv_path}")
 
-
-# Main function
 def main():
     datasets = [
-        {
-            "name": "ImageNet",
-            "dir": "data/ImageNet/ILSVRC/Images",
-            "mapping_file": "data/ImageNet/imagenet_class_index.json",
-            "file_type": "class_index",
-            "subset_size": None  
-        },
-        {
-            "name": "ImageNet-V2",
-            "dir": "data/ImageNet_V2/imagenetv2-matched-frequency-format-val",
-            "mapping_file": "data/ImageNet_V2/class_info.json",
-            "file_type": "class_info",
-            "subset_size": None  
-        },
-        {
-            "name": "ImageNet-R",
-            "dir": "data/ImageNetR/imagenet-r/",
-            "mapping_file": "data/ImageNet/imagenet_class_index.json",
-            "file_type": "class_index",
-            "subset_size": None  
-        },
-        {
-            "name": "ImageNet-Sketch",
-            "dir": "data/ImageNet_Sketch/data/sketch/",
-            "mapping_file": "data/ImageNet/imagenet_class_index.json",
-            "file_type": "class_index",
-            "subset_size": None    
-        }
+        # {"name": "ImageNet", "dir": "data/ImageNet/ILSVRC/Images", "mapping_file": "data/ImageNet/imagenet_class_index.json", "file_type": "class_index", "subset_size": None},
+        # {"name": "ImageNet-V2", "dir": "data/ImageNet_V2/imagenetv2-matched-frequency-format-val", "mapping_file": "data/ImageNet_V2/class_info.json", "file_type": "class_info", "subset_size": None},
+        # {"name": "ImageNet-R", "dir": "data/ImageNetR/imagenet-r/", "mapping_file": "data/ImageNet/imagenet_class_index.json", "file_type": "class_index", "subset_size": None},
+        # {"name": "ImageNet-Sketch", "dir": "data/ImageNet_Sketch/data/sketch/", "mapping_file": "data/ImageNet/imagenet_class_index.json", "file_type": "class_index", "subset_size": None},
+        {"name": "ImageNet-A", "dir": "data/imagenet-a/", "subset_size": None}
     ]
-
     for dataset in datasets:
         df = process_dataset(
             dataset_dir=dataset["dir"],
@@ -261,8 +190,6 @@ def main():
         if df.empty:
             print(f"No data processed for {dataset['name']}. Skipping saving.")
             continue
-
-        # Save the initial CSV
         output_csv = f"data/Processed/{dataset['name']}_corrected_results.csv"
         os.makedirs(os.path.dirname(output_csv), exist_ok=True)
         df.to_csv(output_csv, index=False)
@@ -273,6 +200,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
 
 
 

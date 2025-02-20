@@ -4,6 +4,7 @@ data/ImageNetR/
 data/ImageNot/
 data/ImageNet_V2/
 data/ImageNet_Sketch/
+data/imagenet-a/
 
 # Ignore Kaggle configuration
 data/config/

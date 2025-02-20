@@ -1,53 +1,6 @@
 import scipy.io
 import os
-
-import scipy.io
-
-# def extract_imagenet_synsets_flat(meta_file, ground_truth_file, output_txt):
-#     """
-#     Extracts synsets for the ImageNet validation dataset with flat image structure.
-
-#     Parameters:
-#     - meta_file: Path to meta.mat containing synset-class index mapping.
-#     - ground_truth_file: Path to ILSVRC2012_validation_ground_truth.txt.
-#     - output_txt: Path to save the extracted synsets list.
-#     """
-#     # Load meta.mat to get the mapping of synsets to class indices
-#     meta = scipy.io.loadmat(meta_file)
-#     synsets = [item[0][0] for item in meta['synsets']['WNID']]
-
-#     # Load ground truth file
-#     with open(ground_truth_file, 'r') as f:
-#         ground_truth_indices = [int(line.strip()) for line in f]
-
-#     # Map ground truth indices to synsets
-#     ground_truth_synsets = [synsets[index - 1] for index in ground_truth_indices]
-
-#     # Save the unique synsets to a text file
-#     with open(output_txt, 'w') as f:
-#         f.write("Synset\n")  # Add a header row for clarity
-#         for synset in sorted(set(ground_truth_synsets)):
-#             f.write(synset + '\n')
-
-#     print(f"Synsets saved to {output_txt}")
-
-# # Example usage:
-# meta_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\meta.mat"
-# ground_truth_file_path = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\Annotations\CLS-LOC\val\ILSVRC2012_devkit_t12\data\ILSVRC2012_validation_ground_truth.txt"
-# output_file_path = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets.txt"
-
-# extract_imagenet_synsets_flat(meta_file_path, ground_truth_file_path, output_file_path)
-
-# synset_file = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets.txt"
-
-# with open(synset_file, "r") as f:
-#     synsets = [line.strip() for line in f][1:]  # Skip the first line
-
-# # Overwrite the file with the corrected list
-# with open(synset_file, "w") as f:
-#     f.write("\n".join(synsets))
-
-import scipy.io
+import json
 
 # Path to meta.mat
 meta_file = r"E:\Thesis\IRTNet\data\ImageNet\ILSVRC\ILSVRC2012_devkit_t12\data\meta.mat"
@@ -65,9 +18,6 @@ with open(synset_file, "w") as f:
 
 print(f"Synsets file created successfully with {len(synsets)} synsets!")
 
-
-
-import os
 
 def extract_synsets_from_sketch(data_dir, output_txt):
     """
@@ -98,7 +48,6 @@ output_file_path = r"E:\Thesis\IRTNet\data\Synsets\Sketch_synsets.txt"
 
 extract_synsets_from_sketch(data_dir_path, output_file_path)
 
-import json
 
 # Path to the class_info.json file
 class_info_path = r"E:\Thesis\IRTNet\data\ImageNet_V2\class_info.json"  # Adjust the path as needed
@@ -134,31 +83,6 @@ with open(synsets_path, 'w') as f:
         f.write(f"{synset}\n")
 
 print(f"Synset list saved to {synsets_path}")
-
-
-# Paths
-classes_file = r"E:\Thesis\IRTNet\data\ImageNot\imagenot_classes.txt"  # Path to the ImageNot classes.txt file
-synsets_output = r"E:\Thesis\IRTNet\data\Synsets\ImageNot_synsets.txt"  # Desired path for the synsets file
-
-def convert_classes_to_synsets(classes_path, output_path):
-    # Read classes.txt
-    with open(classes_path, 'r') as f:
-        synsets = f.readlines()
-    
-    # Clean up and write to the new file
-    with open(output_path, 'w') as f:
-        for synset in synsets:
-            synset_cleaned = synset.strip()  # Remove any extra whitespace
-            f.write(f"{synset_cleaned}\n")
-    
-    print(f"Synsets saved to {output_path}")
-
-# Run the conversion
-convert_classes_to_synsets(classes_file, synsets_output)
-
-import scipy.io
-import json
-import os
 
 def extract_imagenet_synsets(meta_file, ground_truth_file, class_index_file, output_txt):
     """
@@ -204,3 +128,38 @@ class_index_file_path = r"E:\Thesis\IRTNet\data\ImageNet\imagenet_class_index.js
 output_file_path = r"E:\Thesis\IRTNet\data\Synsets\ImageNet_synsets_and_classes.txt"
 
 extract_imagenet_synsets(meta_file_path, ground_truth_file_path, class_index_file_path, output_file_path)
+
+import os
+import json
+
+def extract_synsets_from_readme(readme_path, output_txt):
+    """
+    Extracts synsets from the ImageNet-A README file.
+    
+    Parameters:
+    - readme_path: Path to the README file containing synset information.
+    - output_txt: Path to save the extracted synsets list.
+    """
+    synsets = []
+    
+    with open(readme_path, "r") as f:
+        lines = f.readlines()
+    
+    for line in lines:
+        parts = line.strip().split()
+        if len(parts) > 1 and parts[0].startswith("n"):  # Synsets are WordNet IDs
+            synsets.append(parts[0])
+    
+    # Save synsets to a text file
+    with open(output_txt, "w") as f:
+        for synset in synsets:
+            f.write(f"{synset}\n")
+    
+    print(f"Synsets file created successfully with {len(synsets)} synsets!")
+
+if __name__ == "__main__":
+    readme_path = "data/imagenet-a/README.txt"  # Path to the README file
+    output_path = "data/Synsets/ImageNet_A_synsets.txt"  # Output path for synset list
+    
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)  # Ensure directory exists
+    extract_synsets_from_readme(readme_path, output_path)
